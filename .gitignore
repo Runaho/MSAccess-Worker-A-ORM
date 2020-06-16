@@ -9,11 +9,21 @@
 *.user
 *.userosscache
 *.sln.docstates
+*.dll
+*.exe
+*.exp
+*.ilk
+*.lib
+*.ncb
+*.log
+*.pdb
+*.vcproj.*.user
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
 # Build results
+
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/
@@ -339,5 +349,3 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
-
-*.exe
