@@ -265,8 +265,8 @@ namespace A_ORM
         ///     Sql Select Query Maker
         /// </summary>
         /// <param name="TableName">Data Table</param>
-        /// <param name="Top">Kaç adet data çekileceği 0 ise * ile çeker değil ise atanan değer kadar kayıt çeker</param>
-        /// <returns></returns>
+        /// <param name="Top">0 Mean * otherwise it brings up as written.</param>
+        /// <returns>Return Query</returns>
         private static string SqlSelectMaker(string TableName, int Top)
         {
             if (string.IsNullOrWhiteSpace(TableName))

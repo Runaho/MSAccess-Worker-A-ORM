@@ -250,6 +250,7 @@ ServiceFabricBackup/
 *.ldf
 *.ndf
 
+
 # Business Intelligence projects
 *.rdl.data
 *.bim.layout
@@ -338,3 +339,5 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+
+*.exe
