@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package >
+  <metadata>
+    <id>$id$</id>
+    <version>1.0.0.0</version>
+    <title>A-ORM</title>
+    <authors>Gunes Korkmaz</authors>
+    <owners>Gunes Korkmaz</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <iconUrl>https://blog.guneskorkmaz.net/aorm/a-orm.png</iconUrl>
+    <description>Simple Micro-ORM for Access</description>
+    <releaseNotes>Access Worker Initial Relased.</releaseNotes>
+    <copyright>Copyright 2020</copyright>
+    <tags>Access ORM Micro-ORM MDB OLEDB</tags>
+  </metadata>
+</package>
