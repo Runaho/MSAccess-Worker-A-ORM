@@ -2,7 +2,8 @@
 Micro-ORM For Access
 
 ## Install
-[https://github.com/SpatiumTR/Access-Worker-A-ORM/releases/tag/v1.0.0.0]Relase Link
+[Relase Link](https://github.com/SpatiumTR/Access-Worker-A-ORM/releases/tag/v1.0.0.0)
+
 Download dll file & add your project via referance.
 
 ## How It's Work
