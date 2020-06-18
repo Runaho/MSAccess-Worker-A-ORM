@@ -25,6 +25,7 @@ Generate Struct or Class of the Table or Query
  * Must be Same Order Table
  * Must be similar types.
  * if you want to update you must define one DataObjectField
+ * Table Name can be getted via class Display Name attribute. If you don't have a D.N.A. code will use class name. Sturct is working only struct name.
 */
 
 public struct Users
@@ -41,6 +42,25 @@ public struct Users
   [DisplayName("Age")]
   public int PersonAge { get; set; }
 }
+
+// OR
+
+[DisplayName("Users")]
+public class MyUsers
+{
+  [DisplayName("ID"), DataObjectField(true)]
+  public int id { get; set; }
+
+  [DisplayName("Name")]
+  public string Name { get; set; }
+
+  [DisplayName("Surname")]
+  public string Surname { get; set; }
+
+  [DisplayName("Age")]
+  public int PersonAge { get; set; }
+}
+ 
  
 
 //Set the path.
