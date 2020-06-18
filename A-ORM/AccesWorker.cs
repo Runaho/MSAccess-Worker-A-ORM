@@ -8,7 +8,7 @@ using System.Reflection;
 
 namespace A_ORM
 {
-    internal static class AccesWorker
+    public static class AccesWorker
     {
         private static string _provider;
 
@@ -41,10 +41,15 @@ namespace A_ORM
 
         #region Public Methods
 
-        // Custom Query and connection.
-        public static List<object> GetDataList(object T, string query)
+        /// <summary>
+        /// Custom Query Object Filler
+        /// </summary>
+        /// <param name="DataClass">Class or Struct Fill Must be filled.</param>
+        /// <param name="Query"></param>
+        /// <returns></returns>
+        public static List<object> GetDataList(object DataClass, string Query)
         {
-            Type classType = T.GetType();
+            Type classType = DataClass.GetType();
 
             IList<PropertyInfo> props = new List<PropertyInfo>(classType.GetProperties());
 
@@ -52,14 +57,12 @@ namespace A_ORM
 
             using (OleDbConnection connection = Connection)
             {
-                using (OleDbCommand aCommand = new OleDbCommand(query, connection))
+                using (OleDbCommand aCommand = new OleDbCommand(Query, connection))
                 {
                     if (aCommand.Connection.State != ConnectionState.Open)
                         aCommand.Connection.Open();
 
                     OleDbDataReader aReader = aCommand.ExecuteReader();
-
-                    //var schemaTable = aReader.GetSchemaTable();
 
                     try
                     {
@@ -67,24 +70,7 @@ namespace A_ORM
                         {
                             Object instance = Activator.CreateInstance(classType);
 
-                            foreach (PropertyInfo prop in props)
-                            {
-                                Attribute propertyAttribute = prop.GetCustomAttribute(typeof(DisplayNameAttribute));
-                                string accessName = ((DisplayNameAttribute)propertyAttribute).DisplayName;
-                                object sqldata = aReader[accessName];
-
-                                if (sqldata != null)
-                                    if (sqldata.GetType().Name != "DBNull")
-                                        try
-                                        {
-                                            //prop.GetType();
-                                            prop.SetValue(instance, Convert.ChangeType(sqldata, prop.PropertyType));
-                                        }
-                                        catch (Exception Ex)
-                                        {
-                                            throw Ex;
-                                        }
-                            }
+                            instance = InstanceFiller(instance, props, aReader);
 
                             currentList.Add(instance);
                         }
@@ -104,16 +90,20 @@ namespace A_ORM
             }
         }
 
+
+
         /// <summary>
         /// This Method will be fill the DataClass.
         /// </summary>
-        /// <param name="DataClass">Sınıfı alır(Class ve ya Struct verilmelidir) Tablo ismi sınıf'ın ismidir</param>
+        /// <param name="DataClass">Class or Struct Fill Must be filled.</param>
         /// <param name="Top">0 Mean * otherwise it brings up as written.</param>
         /// <returns>Return List<object> filled to access Database</returns>
         public static List<object> List(object DataClass, int Top = 0)
         {
             Type classType = DataClass.GetType();
-            string tableName = DataClass.GetType().Name;
+
+            string tableName = GetTableName(classType);
+
             string sqlQuery = SqlSelectMaker(tableName, Top);
 
             IList<PropertyInfo> props = new List<PropertyInfo>(classType.GetProperties());
@@ -136,33 +126,8 @@ namespace A_ORM
                             // Must be in while otherwise it will be insert last instance every time.
                             object instance = Activator.CreateInstance(classType);
 
-                            // Loop class in prop's
-                            foreach (PropertyInfo prop in props)
-                            {
-                                // Get Property
-                                Attribute propertyAttribute = prop.GetCustomAttribute(typeof(DisplayNameAttribute));
-
-                                // Get Property Display Name For Access
-                                string accessName = ((DisplayNameAttribute)propertyAttribute).DisplayName;
-
-                                // Get Data To Database
-                                object sqldata = aReader[accessName];
-
-                                // If Data Null Cannot be setted.
-                                if (sqldata == null || sqldata.GetType().Name == "DBNull") continue;
-
-                                // Try Set the object class in property.
-                                try
-                                {
-                                    prop.SetValue(instance, Convert.ChangeType(sqldata, prop.PropertyType));
-                                }
-                                catch (Exception Ex)
-                                {
-                                    throw new ArgumentException(
-                                        $"Prop SetValue Exception Access Data Dosn't match to class Property Name {accessName}",
-                                        Ex);
-                                }
-                            }
+                            // Fill Instance
+                            instance = InstanceFiller(instance, props, aReader);
 
                             currentList.Add(instance);
                         }
@@ -275,6 +240,8 @@ namespace A_ORM
             return Top == 0 ? $"Select * From {TableName}" : $"SELECT TOP {Top} * FROM {TableName}";
         }
 
+
+
         /// <summary>
         ///     Generate Insert Query for Class
         ///     DataObjectField(true) Mean Identity True when identity true dosn't added the query.
@@ -286,11 +253,12 @@ namespace A_ORM
         {
             // Get Class Details
             Type classType = NewDatas.GetType();
-            string TableName = NewDatas.GetType().Name;
+            string tableName = GetTableName(classType);
+
             IList<PropertyInfo> props = new List<PropertyInfo>(classType.GetProperties());
 
             // INSERT INTO Users ([ID],[Name],[Surname],[Age]) VALUES(@ID,@Name,@Surname,@Age)
-            string InsertCommand = $"INSERT INTO {TableName}";
+            string InsertCommand = $"INSERT INTO {tableName}";
 
             // Define is table columns "([title], [rating],  [review], [frnISBN], [frnUserName]) "
             string define = "";
@@ -373,11 +341,11 @@ namespace A_ORM
         private static QueryAndParameters SqlUpdateMaker(object NewDatas)
         {
             Type classType = NewDatas.GetType();
-            string TableName = NewDatas.GetType().Name;
+            string tableName = GetTableName(classType);
             IList<PropertyInfo> props = new List<PropertyInfo>(classType.GetProperties());
 
             // INSERT INTO Users ([ID],[Name],[Surname],[Age]) VALUES(@ID,@Name,@Surname,@Age)
-            string UpdateCommand = $"UPDATE {TableName} SET";
+            string UpdateCommand = $"UPDATE {tableName} SET";
 
             // Define is table columns "([title], [rating],  [review], [frnISBN], [frnUserName]) "
             string define = "";
@@ -453,6 +421,85 @@ namespace A_ORM
             public List<OleDbParameter> Parameters { get; set; }
         }
 
+
+
         #endregion QUERY Generators
+
+        #region Helpers
+
+        /// <summary>
+        /// Get Table Name Struct Or Class
+        /// <para>If Struct Get struct name to table name.</para>
+        /// <para>If Class Search for display name attribute to table name.</para>
+        /// </summary>
+        /// <param name="classType">Which class to generate table name.</param>
+        /// <returns></returns>
+        private static string GetTableName(Type classType)
+        {
+            // Object Name == Table Name
+            string tableName = classType.Name;
+
+            // Is Class ?
+            if (classType.IsClass)
+            {
+                // Get Class Display Name Attribute
+
+                // Display Name Is Defined ?
+                if (!(classType.GetCustomAttribute(typeof(DisplayNameAttribute)) is DisplayNameAttribute classDNA)) return tableName;
+
+                // Get DNA Value
+                var classTableName = classDNA.DisplayName;
+
+                // Change Table Name To DNA Value If value not IsNullOrWhiteSpace
+                if (!string.IsNullOrWhiteSpace(classTableName))
+                    tableName = classTableName;
+            }
+
+            return tableName;
+        }
+
+        /// <summary>
+        /// Fill Instance to Reader
+        /// </summary>
+        /// <param name="Instance">Which Object needed to fill datas</param>
+        /// <param name="Props">Property's in instance</param>
+        /// <param name="OdbReader">Database Reads</param>
+        /// <returns>Return Full instance</returns>
+        private static object InstanceFiller(object Instance, IList<PropertyInfo> Props, OleDbDataReader OdbReader)
+        {
+            // Loop class in prop's
+            foreach (PropertyInfo prop in Props)
+            {
+                // Get Property
+                Attribute propertyAttribute = prop.GetCustomAttribute(typeof(DisplayNameAttribute));
+
+                // Get Property Display Name For Access
+                string accessName = ((DisplayNameAttribute)propertyAttribute).DisplayName;
+
+                // Get Data To Database
+                object sqldata = OdbReader[accessName];
+
+                // If Data Null Cannot be setted.
+                if (sqldata == null || sqldata.GetType().Name == "DBNull") continue;
+
+                // Try Set the object class in property.
+                try
+                {
+                    prop.SetValue(Instance, Convert.ChangeType(sqldata, prop.PropertyType));
+                }
+                catch (Exception Ex)
+                {
+                    throw new ArgumentException(
+                        $"Prop SetValue Exception Access Data Dosn't match to class Property Name {accessName}",
+                        Ex);
+                }
+            }
+
+            return Instance;
+        }
+
+
+
+        #endregion
     }
 }
