@@ -4,7 +4,7 @@ Micro-ORM For Access
 ## Install
 [Relase Link](https://github.com/SpatiumTR/Access-Worker-A-ORM/releases/tag/v1.0.0.0)
 
-Download dll file & add your project via referance.
+Download dll file & add your project via referance. I Will add nuget later versions.
 
 ## How It's Work
 To put it simply, it is a system that reads all the properties in the class and converts them into an access query's.
